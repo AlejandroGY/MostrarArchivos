@@ -2,7 +2,9 @@ package mostrararchivos;
 
 import java.awt.Desktop;
 import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -56,9 +58,9 @@ public class ClienteHilos {
                     salida.println(opcionAbrir);
                     
                     String nombreArchivo = entrada.nextLine( );
-                    recibeArchivo(nombreArchivo, conexion, is, fos, bos, bufferSize);
+                    recibeArchivo(nombreArchivo, conexion);
                     if (new File(nombreArchivo).isFile( )) {
-                        //Desktop.getDesktop( ).open(new File(nombreArchivo));
+                        Desktop.getDesktop( ).open(new File(nombreArchivo));
                     } else {
                         System.out.println("No Existe!");
                     }
@@ -102,20 +104,16 @@ public class ClienteHilos {
         return res;
     }
     
-    public static void recibeArchivo(String nombreArchivo, Socket socket, InputStream is, FileOutputStream fos, BufferedOutputStream bos, int bufferSize) {
+    public static void recibeArchivo(String nombreArchivo, Socket socket) throws FileNotFoundException, IOException {
+        File archivo = new File(nombreArchivo);
+        FileOutputStream fos = new FileOutputStream(archivo);
+        DataInputStream is = new DataInputStream(socket.getInputStream());
         try {
-            is = socket.getInputStream( );
-            bufferSize = socket.getReceiveBufferSize( );
-            
-            fos = new FileOutputStream(nombreArchivo);
-            bos = new BufferedOutputStream(fos);
-            byte[] bytes = new byte[bufferSize];
-            int cont;
-            while ((cont = is.read(bytes)) >= 0) {
-                bos.write(bytes, 0, cont);
-            }
-            bos.close( );
-            is.close( );
+            int bytesLength = is.readInt();
+            byte[] buffer = new byte[bytesLength];
+            is.read(buffer, 0, bytesLength);
+            fos.write(buffer);
+            fos.close( );
         } catch (IOException e) {
             e.printStackTrace( );
         }
